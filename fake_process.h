@@ -6,7 +6,7 @@ typedef enum {CPU=0, IO=1} ResourceType;
 // event of a process, is in a list
 typedef struct {
   ListItem list;
-  ResourceType type;
+  ResourceType type; //IO or CPU
   int duration;
 } ProcessEvent;
 

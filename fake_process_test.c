@@ -8,7 +8,7 @@ int main(int argc, char** argv) {
     exit(-1);
   }
   FakeProcess p;
-  int num_events = FakeProcess_load(&p,argv[1]);
+  int num_events = FakeProcess_load(&p,argv[1]); //first argv is the file describing the characteristics of the proc
   printf("read [%s], num events: %d\n",argv[1], num_events);
   num_events = FakeProcess_save(&p,argv[2]);
   printf("saved [%s], num events: %d\n",argv[2], num_events);

@@ -39,13 +39,15 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
   new_pcb->list.next=new_pcb->list.prev=0;
   new_pcb->pid=p->pid;
   new_pcb->events=p->events;
+  new_pcb->burst_prediction=0;
+  new_pcb->last_burst=0;
 
   assert(new_pcb->events.first && "process without events");
 
   // depending on the type of the first event
   // we put the process either in ready or in waiting
   ProcessEvent* e=(ProcessEvent*)new_pcb->events.first;
-  switch(e->type){
+  switch(e->type){ //Here it choose where the new process have to be
   case CPU:
     List_pushBack(&os->ready, (ListItem*) new_pcb);
     break;
@@ -67,7 +69,7 @@ void FakeOS_simStep(FakeOS* os){
 
   //scan process waiting to be started
   //and create all processes starting now
-  ListItem* aux=os->processes.first;
+  ListItem* aux=os->processes.first; //select the process loaded in the processes list in main
   while (aux){
     FakeProcess* proc=(FakeProcess*)aux;
     FakeProcess* new_process=0;
@@ -75,11 +77,11 @@ void FakeOS_simStep(FakeOS* os){
       new_process=proc;
     }
     aux=aux->next;
-    if (new_process) {
+    if (new_process) { //it creates the process brought before
       printf("\tcreate pid:%d\n", new_process->pid);
       new_process=(FakeProcess*)List_detach(&os->processes, (ListItem*)new_process);
       FakeOS_createProcess(os, new_process);
-      free(new_process);
+      free(new_process); //we have put it in ready or waiting 
     }
   }
 
@@ -144,10 +146,14 @@ void FakeOS_simStep(FakeOS* os){
         switch (e->type){
         case CPU:
           printf("\t\tmove to ready\n");
+          running->last_burst=os->timer-running->arrival_time; //now I know how much the last burst was long
+          printf("\nLAST BURST %d, process: %d\n", running->last_burst, running->pid);
           List_pushBack(&os->ready, (ListItem*) running);
           break;
         case IO:
           printf("\t\tmove to waiting\n");
+          running->last_burst=os->timer-running->arrival_time; //now I know how much the last burst was long
+          printf("\nLAST BURST %d, process: %d\n", running->last_burst, running->pid);
           List_pushBack(&os->waiting, (ListItem*) running);
           break;
         }
