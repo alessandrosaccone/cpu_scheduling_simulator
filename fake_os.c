@@ -11,7 +11,7 @@ void burst_prediction(FakePCB* pcb) {
 }
 
 void FakeOS_init(FakeOS* os) {
-  os->running=0;
+  List_init(&os->running);
   List_init(&os->ready);
   List_init(&os->waiting);
   List_init(&os->processes);
@@ -24,7 +24,12 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
   assert(p->arrival_time==os->timer && "time mismatch in creation");
   // we check that in the list of PCBs there is no
   // pcb having the same pid
-  assert( (!os->running || os->running->pid!=p->pid) && "pid taken");
+  ListItem* running=os->running.first;
+  while(running) {
+    FakePCB* run = (FakePCB*)List_find(&os->running, running);
+    assert( (!empty(&os->running) || run->pid!=p->pid) && "pid taken");
+    running=running->next;
+  }
 
   ListItem* aux=os->ready.first;
   while(aux){
@@ -47,6 +52,7 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
   new_pcb->events=p->events;
   new_pcb->burst_prediction=0;
   new_pcb->last_burst=0;
+  new_pcb->last_prediction=0;
 
   assert(new_pcb->events.first && "process without events");
 
@@ -133,57 +139,63 @@ void FakeOS_simStep(FakeOS* os){
   // if event over, destroy event
   // and reschedule process
   // if last event, destroy running
-  FakePCB* running=os->running;
-  printf("\trunning pid: %d\n", running?running->pid:-1);
-  if (running) {
-    ProcessEvent* e=(ProcessEvent*) running->events.first;
-    assert(e->type==CPU);
-    e->duration--;
-    printf("\t\tremaining time:%d\n",e->duration);
-    if (e->duration==0){
-      printf("\t\tend burst\n");
-      List_popFront(&running->events);
-      free(e);
-      if (! running->events.first) {
-        printf("\t\tend process\n");
-        free(running); // kill process
-      } else {
-        e=(ProcessEvent*) running->events.first;
-        switch (e->type){
-        case CPU:
-          printf("\t\tmove to ready\n");
-          printf("\nPREDICTION %f, process: %d\n", running->burst_prediction, running->pid);
-          running->last_burst=os->timer-running->arrival_time; //now I know how much the last burst was long
-          burst_prediction(running);// so now I can calculate how the prediction
-          running->last_prediction=running->burst_prediction; //here I the new value of prediction as the last prediction registered
-          printf("\nLAST BURST %d, process: %d\n", running->last_burst, running->pid);
-          List_pushBack(&os->ready, (ListItem*) running);
-          break;
-        case IO:
-          printf("\t\tmove to waiting\n");
-          printf("\nPREDICTION %f, process: %d\n", running->burst_prediction, running->pid);
-          running->last_burst=os->timer-running->arrival_time; //now I know how much the last burst was long
-          burst_prediction(running);// so now I can calculate how the prediction
-          running->last_prediction=running->burst_prediction; //here I the new value of prediction as the last prediction registered
-          printf("\nLAST BURST %d, process: %d\n", running->last_burst, running->pid);
-          List_pushBack(&os->waiting, (ListItem*) running);
-          break;
+  aux=os->running.first;
+  while(aux) {
+    FakePCB* running=(FakePCB*) aux;
+    aux=aux->next;
+    printf("\trunning pid: %d\n", running?running->pid:-1);
+    if (running) {
+      ProcessEvent* e=(ProcessEvent*) running->events.first;
+      assert(e->type==CPU);
+      e->duration--;
+      printf("\t\tremaining time:%d\n",e->duration);
+      if (e->duration==0){
+        printf("\t\tend burst\n");
+        List_popFront(&running->events);
+        free(e);
+        if (! running->events.first) {
+          printf("\t\tend process\n");
+          free(running); // kill process
+          printf("ciao");
+        } else {
+          e=(ProcessEvent*) running->events.first;
+          switch (e->type){
+          case CPU:
+            printf("\t\tmove to ready\n");
+            printf("\nPREDICTION %f, process: %d\n", running->burst_prediction, running->pid);
+            running->last_burst=os->timer-running->arrival_time; //now I know how much the last burst was long
+            burst_prediction(running);// so now I can calculate how the prediction
+            running->last_prediction=running->burst_prediction; //here I the new value of prediction as the last prediction registered
+            printf("\nLAST BURST %d, process: %d\n", running->last_burst, running->pid);
+            List_pushBack(&os->ready, (ListItem*) running);
+            break;
+          case IO:
+            printf("\t\tmove to waiting\n");
+            printf("\nPREDICTION %f, process: %d\n", running->burst_prediction, running->pid);
+            running->last_burst=os->timer-running->arrival_time; //now I know how much the last burst was long
+            burst_prediction(running);// so now I can calculate how the prediction
+            running->last_prediction=running->burst_prediction; //here I the new value of prediction as the last prediction registered
+            printf("\nLAST BURST %d, process: %d\n", running->last_burst, running->pid);
+            List_pushBack(&os->waiting, (ListItem*) running);
+            break;
+          }
         }
+        assert(List_find(&os->running, (ListItem*)running));
+        List_detach(&os->running, (ListItem*)running); //I remove the running process from the state of running
       }
-      os->running = 0;
     }
   }
 
 
   // call schedule, if defined
-  if (os->schedule_fn && ! os->running){
+  if (os->schedule_fn && ! empty(&os->running)){
     (*os->schedule_fn)(os, os->schedule_args); 
   }
 
   // if running not defined and ready queue not empty
   // put the first in ready to run
-  if (! os->running && os->ready.first) {
-    os->running=(FakePCB*) List_popFront(&os->ready);
+  if (empty(&os->running) && os->ready.first) {
+    List_pushFront(&os->running, (ListItem*) List_popFront(&os->ready));
   }
 
   ++os->timer;

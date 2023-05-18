@@ -1,6 +1,23 @@
 #include "linked_list.h"
 #include <assert.h>
 
+int empty(ListHead* head) {
+  return head->first == 0;
+}
+
+unsigned int len(ListHead* head) {
+  unsigned int count = 0;
+  ListItem* current = head->first;
+  
+  while (current != 0) {
+    count++;
+    current = current->next;
+  }
+  
+  return count;
+}
+
+
 void List_init(ListHead* head) {
   head->first=0;
   head->last=0;
