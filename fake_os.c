@@ -11,7 +11,7 @@ void burst_prediction(FakePCB* pcb) {
 }
 
 void FakeOS_init(FakeOS* os) {
-  os->running=0;
+  List_init(&os->running); //os->running=0;
   List_init(&os->ready);
   List_init(&os->waiting);
   List_init(&os->processes);
@@ -24,7 +24,8 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
   assert(p->arrival_time==os->timer && "time mismatch in creation");
   // we check that in the list of PCBs there is no
   // pcb having the same pid
-  assert( (!os->running || os->running->pid!=p->pid) && "pid taken");
+  FakePCB* run = (FakePCB*)os->running.first;
+  assert( (! (os->running.first) || run->pid!=p->pid) && "pid taken");
 
   ListItem* aux=os->ready.first;
   while(aux){
@@ -133,7 +134,7 @@ void FakeOS_simStep(FakeOS* os){
   // if event over, destroy event
   // and reschedule process
   // if last event, destroy running
-  FakePCB* running=os->running;
+  FakePCB* running=(FakePCB*)os->running.first;
   printf("\trunning pid: %d\n", running?running->pid:-1);
   if (running) {
     ProcessEvent* e=(ProcessEvent*) running->events.first;
@@ -170,20 +171,20 @@ void FakeOS_simStep(FakeOS* os){
           break;
         }
       }
-      os->running = 0;
+      os->running.first = 0;
     }
   }
 
 
   // call schedule, if defined
-  if (os->schedule_fn && ! os->running){
+  if (os->schedule_fn && ! os->running.first){
     (*os->schedule_fn)(os, os->schedule_args); 
   }
 
   // if running not defined and ready queue not empty
   // put the first in ready to run
-  if (! os->running && os->ready.first) {
-    os->running=(FakePCB*) List_popFront(&os->ready);
+  if (! os->running.first && os->ready.first) {
+    os->running.first=List_popFront(&os->ready);
   }
 
   ++os->timer;
