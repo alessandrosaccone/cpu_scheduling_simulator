@@ -1,5 +1,6 @@
 #include "fake_process.h"
 #include "linked_list.h"
+#define DECAY_COEFFICENT 0.9
 #pragma once
 
 
@@ -10,6 +11,7 @@ typedef struct {
   int arrival_time;
   float burst_prediction;
   int last_burst;
+  float last_prediction;
 } FakePCB;
 
 struct FakeOS;

@@ -4,6 +4,12 @@
 
 #include "fake_os.h"
 
+void burst_prediction(FakePCB* pcb) {
+  int last_burst=pcb->last_burst;
+  float last_prediction=pcb->last_prediction;
+  pcb->burst_prediction=DECAY_COEFFICENT*last_burst + (1-DECAY_COEFFICENT)*last_prediction;
+}
+
 void FakeOS_init(FakeOS* os) {
   os->running=0;
   List_init(&os->ready);
@@ -146,13 +152,19 @@ void FakeOS_simStep(FakeOS* os){
         switch (e->type){
         case CPU:
           printf("\t\tmove to ready\n");
+          printf("\nPREDICTION %f, process: %d\n", running->burst_prediction, running->pid);
           running->last_burst=os->timer-running->arrival_time; //now I know how much the last burst was long
+          burst_prediction(running);// so now I can calculate how the prediction
+          running->last_prediction=running->burst_prediction; //here I the new value of prediction as the last prediction registered
           printf("\nLAST BURST %d, process: %d\n", running->last_burst, running->pid);
           List_pushBack(&os->ready, (ListItem*) running);
           break;
         case IO:
           printf("\t\tmove to waiting\n");
+          printf("\nPREDICTION %f, process: %d\n", running->burst_prediction, running->pid);
           running->last_burst=os->timer-running->arrival_time; //now I know how much the last burst was long
+          burst_prediction(running);// so now I can calculate how the prediction
+          running->last_prediction=running->burst_prediction; //here I the new value of prediction as the last prediction registered
           printf("\nLAST BURST %d, process: %d\n", running->last_burst, running->pid);
           List_pushBack(&os->waiting, (ListItem*) running);
           break;
