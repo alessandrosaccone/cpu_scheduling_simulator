@@ -23,7 +23,9 @@ void schedSJF(FakeOS* os, void* args_){
 
   FakePCB* pcb=(FakePCB*) List_popFront(&os->ready);
   pcb->arrival_time=os->timer;
-  os->running=pcb;
+  printf("\nPCB ARRIVAL TIME\n: %d", pcb->arrival_time);
+  List_pushFront(&os->running, (ListItem*)pcb);
+  printf("\nAll fine\n");
   
   assert(pcb->events.first);
   ProcessEvent* e = (ProcessEvent*)pcb->events.first;
@@ -43,7 +45,7 @@ void schedSJF(FakeOS* os, void* args_){
   }
 };
 
-void schedRR(FakeOS* os, void* args_){
+/*void schedRR(FakeOS* os, void* args_){
   SchedRRArgs* args=(SchedRRArgs*)args_;
 
   // look for the first process in ready
@@ -70,7 +72,7 @@ void schedRR(FakeOS* os, void* args_){
     e->duration-=args->quantum;
     List_pushFront(&pcb->events, (ListItem*)qe);
   }
-};
+};*/
 
 int main(int argc, char** argv) {
   FakeOS_init(&os);

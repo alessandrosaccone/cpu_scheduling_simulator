@@ -147,7 +147,7 @@ void FakeOS_simStep(FakeOS* os){
     printf("\trunning pid: %d\n", running?running->pid:-1);
     if (running) {
       ProcessEvent* e=(ProcessEvent*) running->events.first;
-      assert(e->type==CPU);
+      //assert(e->type==CPU);
       e->duration--;
       printf("\t\tremaining time:%d\n",e->duration);
       if (e->duration==0){
@@ -157,7 +157,6 @@ void FakeOS_simStep(FakeOS* os){
         if (! running->events.first) {
           printf("\t\tend process\n");
           free(running); // kill process
-          printf("ciao");
         } else {
           e=(ProcessEvent*) running->events.first;
           switch (e->type){
@@ -168,7 +167,7 @@ void FakeOS_simStep(FakeOS* os){
             burst_prediction(running);// so now I can calculate how the prediction
             running->last_prediction=running->burst_prediction; //here I the new value of prediction as the last prediction registered
             printf("\nLAST BURST %d, process: %d\n", running->last_burst, running->pid);
-            List_pushBack(&os->ready, (ListItem*) running);
+            List_pushFront(&os->ready, (ListItem*) running);
             break;
           case IO:
             printf("\t\tmove to waiting\n");
@@ -177,12 +176,12 @@ void FakeOS_simStep(FakeOS* os){
             burst_prediction(running);// so now I can calculate how the prediction
             running->last_prediction=running->burst_prediction; //here I the new value of prediction as the last prediction registered
             printf("\nLAST BURST %d, process: %d\n", running->last_burst, running->pid);
-            List_pushBack(&os->waiting, (ListItem*) running);
+            List_pushFront(&os->waiting, (ListItem*) running);
             break;
           }
         }
         assert(List_find(&os->running, (ListItem*)running));
-        List_detach(&os->running, (ListItem*)running); //I remove the running process from the state of running
+        List_popFront(&os->running); //I remove the running process from the state of running
       }
     }
   }
