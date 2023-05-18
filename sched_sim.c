@@ -21,25 +21,9 @@ void schedSJF(FakeOS* os, void* args_){
   if (! os->ready.first)
     return;
 
-  ListItem* aux = os->ready.first;
-  FakePCB* chosen=(FakePCB*)malloc(sizeof(FakePCB));
-  chosen->list.next=chosen->list.prev=0;
-  chosen->pid=-1;
-  chosen->events.first=chosen->events.last=0;
-  chosen->burst_prediction=MAX;
-  chosen->last_burst=0;
-  chosen->last_prediction=0;
-  while(aux){
-    FakePCB* pcb=(FakePCB*)aux;
-    if (pcb->burst_prediction < chosen->burst_prediction)
-      chosen = pcb;
-    aux=aux->next;
-  }
-  assert(List_find(&os->ready, (ListItem*)chosen));
-
-  FakePCB* pcb=(FakePCB*) List_detach(&os->ready, (ListItem*)chosen);
+  FakePCB* pcb=(FakePCB*) List_popFront(&os->ready);
   pcb->arrival_time=os->timer;
-  List_pushFront(&os->running, (ListItem*)pcb);
+  os->running=pcb;
   
   assert(pcb->events.first);
   ProcessEvent* e = (ProcessEvent*)pcb->events.first;
@@ -68,7 +52,7 @@ void schedRR(FakeOS* os, void* args_){
     return;
 
   FakePCB* pcb=(FakePCB*) List_popFront(&os->ready);
-  List_pushFront(&os->running, (ListItem*)pcb);
+  os->running=pcb;
   
   assert(pcb->events.first);
   ProcessEvent* e = (ProcessEvent*)pcb->events.first;
@@ -95,7 +79,12 @@ int main(int argc, char** argv) {
   os.schedule_args=&srr_args;
   os.schedule_fn=schedSJF; //here it calls the scheduler involved 
   
-  for (int i=1; i<argc; ++i){
+  assert(atoi(argv[1])!=0 && *argv[1]!='0');
+  int num_running=atoi(argv[1]);
+  printf("\nNUMBER OF CORES: \t%d\n", num_running);
+  os.num_running=num_running;
+
+  for (int i=2; i<argc; ++i){
     FakeProcess new_process;
     int num_events=FakeProcess_load(&new_process, argv[i]);
     printf("loading [%s], pid: %d, events:%d",
