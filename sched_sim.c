@@ -38,8 +38,8 @@ void schedSJF(FakeOS* os, void* args_){
   assert(List_find(&os->ready, (ListItem*)chosen));
 
   FakePCB* pcb=(FakePCB*) List_detach(&os->ready, (ListItem*)chosen);
-  List_pushFront(&os->running, (ListItem*) pcb);
   pcb->arrival_time=os->timer;
+  List_pushFront(&os->running, (ListItem*)pcb);
   
   assert(pcb->events.first);
   ProcessEvent* e = (ProcessEvent*)pcb->events.first;
@@ -94,13 +94,8 @@ int main(int argc, char** argv) {
   srr_args.quantum=10; //it sets the quantum of RR by itself
   os.schedule_args=&srr_args;
   os.schedule_fn=schedSJF; //here it calls the scheduler involved 
-
-  assert(atoi(argv[1])!=0 && *argv[1]!='0');// we make sure the argument passed is an integer
-  int num_running=atoi(argv[1]);
-  printf("\nNUMBER OF CORES: %d\t\n", num_running); 
-  os.num_running=num_running;
-
-  for (int i=num_running+1; i<argc; ++i){
+  
+  for (int i=1; i<argc; ++i){
     FakeProcess new_process;
     int num_events=FakeProcess_load(&new_process, argv[i]);
     printf("loading [%s], pid: %d, events:%d",
