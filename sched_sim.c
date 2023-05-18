@@ -23,9 +23,7 @@ void schedSJF(FakeOS* os, void* args_){
 
   FakePCB* pcb=(FakePCB*) List_popFront(&os->ready);
   pcb->arrival_time=os->timer;
-  printf("\nPCB ARRIVAL TIME\n: %d", pcb->arrival_time);
-  List_pushFront(&os->running, (ListItem*)pcb);
-  printf("\nAll fine\n");
+  os->running=pcb;
   
   assert(pcb->events.first);
   ProcessEvent* e = (ProcessEvent*)pcb->events.first;
@@ -45,7 +43,7 @@ void schedSJF(FakeOS* os, void* args_){
   }
 };
 
-/*void schedRR(FakeOS* os, void* args_){
+void schedRR(FakeOS* os, void* args_){
   SchedRRArgs* args=(SchedRRArgs*)args_;
 
   // look for the first process in ready
@@ -72,7 +70,7 @@ void schedSJF(FakeOS* os, void* args_){
     e->duration-=args->quantum;
     List_pushFront(&pcb->events, (ListItem*)qe);
   }
-};*/
+};
 
 int main(int argc, char** argv) {
   FakeOS_init(&os);
@@ -81,12 +79,7 @@ int main(int argc, char** argv) {
   os.schedule_args=&srr_args;
   os.schedule_fn=schedSJF; //here it calls the scheduler involved 
   
-  assert(atoi(argv[1])!=0 && *argv[1]!='0');
-  int num_running=atoi(argv[1]);
-  printf("\nNUMBER OF CORES: \t%d\n", num_running);
-  os.num_running=num_running;
-
-  for (int i=2; i<argc; ++i){
+  for (int i=1; i<argc; ++i){
     FakeProcess new_process;
     int num_events=FakeProcess_load(&new_process, argv[i]);
     printf("loading [%s], pid: %d, events:%d",
@@ -98,7 +91,7 @@ int main(int argc, char** argv) {
     }
   }
   printf("num processes in queue %d\n", os.processes.size);
-  while(os.running.first
+  while(os.running
         || os.ready.first
         || os.waiting.first
         || os.processes.first){

@@ -1,7 +1,6 @@
 #include "fake_process.h"
 #include "linked_list.h"
 #define DECAY_COEFFICENT 0.9
-#define MAX 999999
 #pragma once
 
 
@@ -19,14 +18,13 @@ struct FakeOS;
 typedef void (*ScheduleFn)(struct FakeOS* os, void* args);
 
 typedef struct FakeOS{
-  ListHead running; //it was a FakePCB*, but now I need a list of running processes
+  FakePCB* running;
   ListHead ready;
   ListHead waiting;
   int timer;
   ScheduleFn schedule_fn;
   void* schedule_args;
 
-  int num_running;
   ListHead processes;
 } FakeOS;
 
