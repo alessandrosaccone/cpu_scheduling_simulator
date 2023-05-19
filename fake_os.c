@@ -4,6 +4,28 @@
 
 #include "fake_os.h"
 
+void List_print(ListHead* head) {
+  ListItem* item = head->first;
+  if (!item)
+    printf("\nLIST pid: no\n");
+  while (item) {
+    FakePCB* it = (FakePCB*)item;
+    printf("\nLIST pid: %d\n", it->pid);
+    item=item->next;
+  }
+}
+
+void Ready_print(ListHead* head) {
+  ListItem* item = head->first;
+  if (!item)
+    printf("\tready pid: no\n");
+  while (item) {
+    FakePCB* it = (FakePCB*)item;
+    printf("\tready pid: %d\n", it->pid);
+    item=item->next;
+  }
+}
+
 void burst_prediction(FakePCB* pcb) {
   int last_burst=pcb->last_burst;
   float last_prediction=pcb->last_prediction;
@@ -17,6 +39,7 @@ void FakeOS_init(FakeOS* os) {
   List_init(&os->processes);
   os->timer=0;
   os->schedule_fn=0;
+  os->is_schedule_needed=0;
 }
 
 void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
@@ -48,6 +71,8 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
   new_pcb->events=p->events;
   new_pcb->burst_prediction=0;
   new_pcb->last_burst=0;
+  new_pcb->arrival_time=p->arrival_time;
+  new_pcb->last_prediction=0;
 
   assert(new_pcb->events.first && "process without events");
 
@@ -57,6 +82,7 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
   switch(e->type){ //Here it choose where the new process have to be
   case CPU:
     List_pushBack(&os->ready, (ListItem*) new_pcb);
+    os->is_schedule_needed=1;
     break;
   case IO:
     List_pushBack(&os->waiting, (ListItem*) new_pcb);
@@ -118,6 +144,7 @@ void FakeOS_simStep(FakeOS* os){
         case CPU:
           printf("\t\tmove to ready\n");
           List_pushBack(&os->ready, (ListItem*) pcb);
+          os->is_schedule_needed=1;
           break;
         case IO:
           printf("\t\tmove to waiting\n");
@@ -134,58 +161,66 @@ void FakeOS_simStep(FakeOS* os){
   // if event over, destroy event
   // and reschedule process
   // if last event, destroy running
-  FakePCB* running=(FakePCB*)os->running.first;
-  printf("\trunning pid: %d\n", running?running->pid:-1);
-  if (running) {
-    ProcessEvent* e=(ProcessEvent*) running->events.first;
+  //for (int i=0; i<os->num_core; i++) {}
+  aux=os->running.first;
+  while(aux) {
+    FakePCB* pcb = (FakePCB*)aux;
+    aux=aux->next;
+    ProcessEvent* e=(ProcessEvent*) pcb->events.first;
+    printf("\trunning pid: %d\n", pcb->pid);
     assert(e->type==CPU);
     e->duration--;
     printf("\t\tremaining time:%d\n",e->duration);
     if (e->duration==0){
       printf("\t\tend burst\n");
-      List_popFront(&running->events);
+      List_popFront(&pcb->events);
       free(e);
-      if (! running->events.first) {
+      if (! pcb->events.first) {
         printf("\t\tend process\n");
-        free(running); // kill process
+        free(pcb); // kill process
       } else {
-        e=(ProcessEvent*) running->events.first;
-        switch (e->type){
+        e=(ProcessEvent*) pcb->events.first;
+        switch (e->type){  
         case CPU:
           printf("\t\tmove to ready\n");
-          printf("\nPREDICTION %f, process: %d\n", running->burst_prediction, running->pid);
-          running->last_burst=os->timer-running->arrival_time; //now I know how much the last burst was long
-          burst_prediction(running);// so now I can calculate how the prediction
-          running->last_prediction=running->burst_prediction; //here I the new value of prediction as the last prediction registered
-          printf("\nLAST BURST %d, process: %d\n", running->last_burst, running->pid);
-          List_pushBack(&os->ready, (ListItem*) running);
+          printf("\nPREDICTION %f, process: %d\n", pcb->burst_prediction, pcb->pid);
+          pcb->last_burst=os->timer-pcb->arrival_time; //now I know how much the last burst was long
+          burst_prediction(pcb);// so now I can calculate how the prediction
+          pcb->last_prediction=pcb->burst_prediction; //here I the new value of prediction as the last prediction registered
+          printf("\nLAST BURST %d, process: %d\n", pcb->last_burst, pcb->pid);
+          List_pushBack(&os->ready, (ListItem*) pcb);
+          os->is_schedule_needed=1;
           break;
         case IO:
           printf("\t\tmove to waiting\n");
-          printf("\nPREDICTION %f, process: %d\n", running->burst_prediction, running->pid);
-          running->last_burst=os->timer-running->arrival_time; //now I know how much the last burst was long
-          burst_prediction(running);// so now I can calculate how the prediction
-          running->last_prediction=running->burst_prediction; //here I the new value of prediction as the last prediction registered
-          printf("\nLAST BURST %d, process: %d\n", running->last_burst, running->pid);
-          List_pushBack(&os->waiting, (ListItem*) running);
+          List_pushBack(&os->waiting, (ListItem*) pcb);
+          printf("\nPREDICTION %f, process: %d\n", pcb->burst_prediction, pcb->pid);
+          pcb->last_burst=os->timer-pcb->arrival_time; //now I know how much the last burst was long
+          burst_prediction(pcb);// so now I can calculate how the prediction
+          pcb->last_prediction=pcb->burst_prediction; //here I the new value of prediction as the last prediction registered
+          printf("\nLAST BURST %d, process: %d\n", pcb->last_burst, pcb->pid);
+          os->is_schedule_needed=0;
           break;
         }
       }
-      os->running.first = 0;
+        //printf("Debug"); fflush(stdout);
+        if (List_find(&os->running, (ListItem*) pcb))
+          pcb = (FakePCB*)List_detach(&os->running, (ListItem*) pcb);
+        //os->running.first = 0;
     }
   }
 
+  Ready_print(&os->ready);
 
   // call schedule, if defined
-  if (os->schedule_fn && ! os->running.first){
+  if (os->schedule_fn && List_size(&os->running)<os->num_core && os->is_schedule_needed){
     (*os->schedule_fn)(os, os->schedule_args); 
+    os->is_schedule_needed=0;
   }
 
   // if running not defined and ready queue not empty
   // put the first in ready to run
-  if (! os->running.first && os->ready.first) {
-    os->running.first=List_popFront(&os->ready);
-  }
+  
 
   ++os->timer;
 

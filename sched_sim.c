@@ -18,29 +18,37 @@ void schedSJF(FakeOS* os, void* args_){
 
   // look for the first process in ready
   // if none, return
+
   if (! os->ready.first)
     return;
 
-  FakePCB* pcb=(FakePCB*) List_popFront(&os->ready);
-  pcb->arrival_time=os->timer;
-  os->running.first=(ListItem*)pcb;
-  
-  assert(pcb->events.first);
-  ProcessEvent* e = (ProcessEvent*)pcb->events.first;
-  assert(e->type==CPU);
+  int i=0;
+  while (!List_empty(&os->ready) && i < os->num_core) {
+      
+      FakePCB* pcb=(FakePCB*) List_popFront(&os->ready);
+      pcb->arrival_time=os->timer;
+      List_pushFront(&os->running, (ListItem*)pcb);
+      
+      //os->running.first=(ListItem*)pcb;
+      
+      assert(pcb->events.first);
+      ProcessEvent* e = (ProcessEvent*)pcb->events.first;
+      assert(e->type==CPU);
 
-  // look at the first event
-  // if duration>quantum
-  // push front in the list of event a CPU event of duration quantum
-  // alter the duration of the old event subtracting quantum
-  if (e->duration>args->quantum) {
-    ProcessEvent* qe=(ProcessEvent*)malloc(sizeof(ProcessEvent));
-    qe->list.prev=qe->list.next=0;
-    qe->type=CPU;
-    qe->duration=args->quantum;
-    e->duration-=args->quantum;
-    List_pushFront(&pcb->events, (ListItem*)qe);
-  }
+      // look at the first event
+      // if duration>quantum
+      // push front in the list of event a CPU event of duration quantum
+      // alter the duration of the old event subtracting quantum
+      if (e->duration>args->quantum) {
+        ProcessEvent* qe=(ProcessEvent*)malloc(sizeof(ProcessEvent));
+        qe->list.prev=qe->list.next=0;
+        qe->type=CPU;
+        qe->duration=args->quantum;
+        e->duration-=args->quantum;
+        List_pushFront(&pcb->events, (ListItem*)qe);
+      }
+      i++;
+    }
 };
 
 void schedRR(FakeOS* os, void* args_){
@@ -79,7 +87,12 @@ int main(int argc, char** argv) {
   os.schedule_args=&srr_args;
   os.schedule_fn=schedSJF; //here it calls the scheduler involved 
   
-  for (int i=1; i<argc; ++i){
+  assert( (atoi(argv[1])!=0 && *argv[1]!='0') && "You have to digit the number of cores");
+  int num_core=atoi(argv[1]);
+  printf("\nCORE NUMBER: \t%d\n\n", num_core);
+  os.num_core=num_core;
+
+  for (int i=2; i<argc; ++i){
     FakeProcess new_process;
     int num_events=FakeProcess_load(&new_process, argv[i]);
     printf("loading [%s], pid: %d, events:%d",

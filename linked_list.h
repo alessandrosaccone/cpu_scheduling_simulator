@@ -19,3 +19,4 @@ ListItem* List_pushBack(ListHead* head, ListItem* item);
 ListItem* List_pushFront(ListHead* head, ListItem* item);
 ListItem* List_popFront(ListHead* head);
 int List_empty(ListHead* head);
+int List_size(ListHead* head);

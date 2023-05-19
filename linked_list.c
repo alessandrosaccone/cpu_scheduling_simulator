@@ -5,6 +5,18 @@ int List_empty(ListHead* head) {
   return head->first == 0;
 }
 
+int List_size(ListHead* head) {
+  int size = 0;
+  ListItem* item = head->first;
+  
+  while (item) {
+    size++;
+    item = item->next;
+  }
+  
+  return size;
+}
+
 void List_init(ListHead* head) {
   head->first=0;
   head->last=0;
