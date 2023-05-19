@@ -6,7 +6,7 @@ The commit message "aggiorno" are due to an alias used for general and not funda
 [alias: commit -> git commit -m "aggiorno"]
 
 In order to correctly use this program to run it you should write:
-./sched_sim <decay_coefficient> <cores_number> <scheduling_policy> <quantum> <process_files>
+./sched_sim <decay_coefficient> <cores_number> <scheduling_policy> <chosen_quantum> <process_files>
 
 The <scheduling_policy> should be RR or SJF (default SJF for other values)
-The <quantum> is for the preemption
+The <chosen_quantum> is for the preemption
