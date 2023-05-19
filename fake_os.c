@@ -174,8 +174,8 @@ void FakeOS_simStep(FakeOS* os){
       free(e);
       if (! pcb->events.first) {
         printf("\t\tend process\n");
-        if (List_find(&os->running, (ListItem*) pcb))
-            pcb = (FakePCB*)List_detach(&os->running, (ListItem*) pcb);
+        assert(List_find(&os->running, (ListItem*) pcb));
+        pcb = (FakePCB*)List_detach(&os->running, (ListItem*) pcb);
         free(pcb); // kill process
       } else {
         e=(ProcessEvent*) pcb->events.first;
