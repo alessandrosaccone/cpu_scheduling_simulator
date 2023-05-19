@@ -26,7 +26,6 @@ typedef struct FakeOS{
   void* schedule_args;
 
   int num_core;
-  int is_schedule_needed;
   ListHead processes;
 } FakeOS;
 
