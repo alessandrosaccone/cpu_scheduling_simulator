@@ -200,7 +200,7 @@ void FakeOS_simStep(FakeOS* os){
           break;
         }
         printf("\n\tLast burst of process %d: \t%d\n", pcb->pid, pcb->last_burst);
-        printf("\trediction of process %d: \t%f\n\n", pcb->pid, pcb->burst_prediction);
+        printf("\tPrediction of process %d: \t%f\n\n", pcb->pid, pcb->burst_prediction);
       }
     }
   }

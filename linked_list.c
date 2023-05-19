@@ -1,5 +1,26 @@
 #include "linked_list.h"
+#include "fake_os.h"
+#include <stdio.h>
 #include <assert.h>
+
+void printList(const ListHead* head) {
+    if (head == 0 || head->first == 0) {
+        printf("List is empty.\n");
+        return;
+    }
+
+    const ListItem* current = head->first;
+
+    while (current) {
+      int print_pid = ((FakePCB*)(current))->pid;
+      int print_pred = ((FakePCB*)(current))->burst_prediction;
+        printf("%d ", print_pid);
+        printf("Predizione: %d\t |||\t", print_pred);
+        current = current->next;
+    }
+
+    printf("\n");
+}
 
 int List_empty(ListHead* head) {
   return head->first == 0;
