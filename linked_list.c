@@ -13,9 +13,9 @@ void printList(const ListHead* head) {
 
     while (current) {
       int print_pid = ((FakePCB*)(current))->pid;
-      int print_pred = ((FakePCB*)(current))->burst_prediction;
+      float print_pred = ((FakePCB*)(current))->burst_prediction;
         printf("%d ", print_pid);
-        printf("Predizione: %d\t |||\t", print_pred);
+        printf("Predizione: %f\t |||\t", print_pred);
         current = current->next;
     }
 

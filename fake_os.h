@@ -1,6 +1,5 @@
 #include "fake_process.h"
 #include "linked_list.h"
-#define DECAY_COEFFICENT 0.9
 #define MAX 999999
 #pragma once
 
@@ -26,6 +25,7 @@ typedef struct FakeOS{
   ScheduleFn schedule_fn;
   void* schedule_args;
 
+  float decay_coefficient;
   int num_core;
   ListHead processes;
 } FakeOS;

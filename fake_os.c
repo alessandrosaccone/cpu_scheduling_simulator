@@ -26,10 +26,10 @@ void Ready_print(ListHead* head) {
   }
 }
 
-void burst_prediction(FakePCB* pcb) {
+void burst_prediction(FakePCB* pcb, FakeOS* os) {
   int last_burst=pcb->last_burst;
   float last_prediction=pcb->last_prediction;
-  pcb->burst_prediction=DECAY_COEFFICENT*last_burst + (1-DECAY_COEFFICENT)*last_prediction;
+  pcb->burst_prediction=os->decay_coefficient*last_burst + (1-os->decay_coefficient)*last_prediction;
 }
 
 void FakeOS_init(FakeOS* os) {
@@ -185,7 +185,7 @@ void FakeOS_simStep(FakeOS* os){
           if (List_find(&os->running, (ListItem*) pcb))
             pcb = (FakePCB*)List_detach(&os->running, (ListItem*) pcb);
           pcb->last_burst=os->timer-pcb->arrival_time; //now I know how much the last burst was long
-          burst_prediction(pcb);// so now I can calculate how the prediction
+          burst_prediction(pcb, os);// so now I can calculate how the prediction
           pcb->last_prediction=pcb->burst_prediction; //here I the new value of prediction as the last prediction registered
           List_pushBack(&os->ready, (ListItem*) pcb);
           break;
@@ -194,7 +194,7 @@ void FakeOS_simStep(FakeOS* os){
           if (List_find(&os->running, (ListItem*) pcb))
           pcb = (FakePCB*)List_detach(&os->running, (ListItem*) pcb);
           pcb->last_burst=os->timer-pcb->arrival_time; //now I know how much the last burst was long
-          burst_prediction(pcb);// so now I can calculate how the prediction
+          burst_prediction(pcb, os);// so now I can calculate how the prediction
           pcb->last_prediction=pcb->burst_prediction; //here I the new value of prediction as the last prediction registered
           List_pushBack(&os->waiting, (ListItem*) pcb);
           break;

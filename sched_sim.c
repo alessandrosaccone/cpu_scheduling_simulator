@@ -8,11 +8,10 @@ FakeOS os;
 
 typedef struct { //only for order
   int quantum;
-} SchedSJFArgs;
+} SchedArgs;
 
 FakePCB* getFakePCBWithLowestBurstPrediction(ListHead* head) {
     if (head->first == NULL) {
-        // List is empty
         return NULL;
     }
 
@@ -26,12 +25,11 @@ FakePCB* getFakePCBWithLowestBurstPrediction(ListHead* head) {
         }
         current = current->next;
     }
-
     return minPCB;
 }
 
 void schedSJF(FakeOS* os, void* args_){
-  SchedSJFArgs* args=(SchedSJFArgs*)args_;
+  SchedArgs* args=(SchedArgs*)args_;
 
   // look for the first process in ready
   // if none, return
@@ -40,9 +38,10 @@ void schedSJF(FakeOS* os, void* args_){
     return;
 
   int i=0;
+  printList(&os->ready);
   while (!List_empty(&os->ready) && i < os->num_core) {
       
-      printList(&os->ready);
+      
       FakePCB* pcb = getFakePCBWithLowestBurstPrediction(&os->ready);
       FakePCB* proof=(FakePCB*) List_detach(&os->ready, (ListItem*)pcb);
       if (!proof) exit(-1);
@@ -71,8 +70,8 @@ void schedSJF(FakeOS* os, void* args_){
     }
 };
 
-/*void schedRR(FakeOS* os, void* args_){
-  SchedSJFArgs* args=(SchedSJFArgs*)args_;
+void schedRR(FakeOS* os, void* args_){
+  SchedArgs* args=(SchedArgs*)args_;
 
   // look for the first process in ready
   // if none, return
@@ -107,21 +106,42 @@ void schedSJF(FakeOS* os, void* args_){
       }
       i++;
     }
-};*/
+};
 
 int main(int argc, char** argv) {
   FakeOS_init(&os);
-  SchedSJFArgs srr_args;
-  srr_args.quantum=10; //it sets the quantum 
-  os.schedule_args=&srr_args;
-  os.schedule_fn=schedSJF; //here it calls the scheduler involved 
+  SchedArgs srr_args;
+  //default quantum for preemption
   
-  assert( (atoi(argv[1])!=0 && *argv[1]!='0') && "You have to digit the number of cores");
-  int num_core=atoi(argv[1]);
-  printf("\nCORE NUMBER: \t%d\n\n", num_core);
+  if (argc<=5) {
+    printf("You must write <decay_coefficient> <core_number> <scheduling_policy> <quantum> <process_files...>\n");
+    exit(-1);
+  }
+
+  assert( atof(argv[1])!=0 && atof(argv[1])<=1 && "You have to digit a number between 0 and 1");
+  os.decay_coefficient=atof(argv[1]);
+  printf("DECAY COEFFICIENT: %f\n", os.decay_coefficient);
+
+  assert( (atoi(argv[2])!=0 && *argv[2]!='0') && "You have to digit the number of cores");
+  int num_core=atoi(argv[2]);
+  printf("CORE NUMBER: \t%d\n\n", num_core);
   os.num_core=num_core;
 
-  for (int i=2; i<argc; ++i){
+  if (strcmp(argv[3], "RR")==0) {
+    os.schedule_args=&srr_args;
+    os.schedule_fn=schedRR; 
+    printf("===========Scheduling policy chosen: RR ==============\n");
+  }
+  else {
+    os.schedule_args=&srr_args;
+    os.schedule_fn=schedSJF;  //default SJF
+    printf("===========Scheduling policy chosen: SJF ==============\n\n");
+  }
+
+  assert(atoi(argv[4])!=0 && *argv[4]!='0' && "You must insert an integer value of quantum");
+  srr_args.quantum=atoi(argv[4]); 
+  
+  for (int i=5; i<argc; ++i){
     FakeProcess new_process;
     int num_events=FakeProcess_load(&new_process, argv[i]);
     printf("loading [%s], pid: %d, events:%d",
