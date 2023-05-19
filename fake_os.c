@@ -221,4 +221,32 @@ void FakeOS_simStep(FakeOS* os){
 }
 
 void FakeOS_destroy(FakeOS* os) {
+    // Destroy the running processes
+    while (!List_empty(&os->running)) {
+        ListItem* item = List_popFront(&os->running);
+        FakePCB* process = (FakePCB*)item;
+        free(process);
+    }
+
+    // Destroy the ready processes
+    while (!List_empty(&os->ready)) {
+        ListItem* item = List_popFront(&os->ready);
+        FakePCB* process = (FakePCB*)item;
+        free(process);
+    }
+
+    // Destroy the waiting processes
+    while (!List_empty(&os->waiting)) {
+        ListItem* item = List_popFront(&os->waiting);
+        FakePCB* process = (FakePCB*)item;
+        free(process);
+    }
+
+    // Destroy the processes list
+    while (!List_empty(&os->processes)) {
+        ListItem* item = List_popFront(&os->processes);
+        FakePCB* process = (FakePCB*)item;
+        free(process);
+    }
 }
+
