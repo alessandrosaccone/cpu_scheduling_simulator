@@ -1,6 +1,7 @@
 #include "fake_process.h"
 #include "linked_list.h"
 #define DECAY_COEFFICENT 0.9
+#define MAX 999999
 #pragma once
 
 

@@ -6,6 +6,12 @@
 
 FakeOS os;
 
+typedef enum {RR=0, SJF=1} SchedulerType;
+
+typedef struct {
+  int quantum;
+} SchedRRArgs;
+
 typedef struct { //only for order
   int quantum;
 } SchedSJFArgs;
@@ -15,21 +21,33 @@ void schedSJF(FakeOS* os, void* args_){
 
   // look for the first process in ready
   // if none, return
-
+  
   if (! os->ready.first)
     return;
-
+  
   int i=0;
+  FakePCB* choose=0;
+  float min_burst_prediction = MAX; 
   while (!List_empty(&os->ready) && i < os->num_core) {
+      ListItem* aux=os->ready.first;
+      while (aux) {
+        FakePCB* pcb = (FakePCB*)aux;
+        if (pcb->burst_prediction < min_burst_prediction) {
+          choose=pcb;
+          min_burst_prediction = pcb->burst_prediction;
+        }
+        aux=aux->next;
+      }
+      choose->arrival_time=os->timer;
       
-      FakePCB* pcb=(FakePCB*) List_popFront(&os->ready);
-      pcb->arrival_time=os->timer;
-      List_pushFront(&os->running, (ListItem*)pcb);
+      List_pushFront(&os->running, (ListItem*)choose);
+      FakePCB* fp = &os->running.first;
+      printf("%d", fp->pid);
       
       //os->running.first=(ListItem*)pcb;
       
-      assert(pcb->events.first);
-      ProcessEvent* e = (ProcessEvent*)pcb->events.first;
+      assert(choose->events.first);
+      ProcessEvent* e = (ProcessEvent*)choose->events.first;
       assert(e->type==CPU);
 
       // look at the first event
@@ -42,18 +60,49 @@ void schedSJF(FakeOS* os, void* args_){
         qe->type=CPU;
         qe->duration=args->quantum;
         e->duration-=args->quantum;
-        List_pushFront(&pcb->events, (ListItem*)qe);
+        List_pushFront(&choose->events, (ListItem*)qe);
       }
       i++;
     }
 };
 
+void schedRR(FakeOS* os, void* args_){
+  SchedRRArgs* args=(SchedRRArgs*)args_;
+
+  // look for the first process in ready
+  // if none, return
+  if (! os->ready.first)
+    return;
+
+  FakePCB* pcb=(FakePCB*) List_popFront(&os->ready);
+  os->running.first=(ListItem*)pcb;
+  
+  assert(pcb->events.first);
+  ProcessEvent* e = (ProcessEvent*)pcb->events.first;
+  assert(e->type==CPU);
+
+  // look at the first event
+  // if duration>quantum
+  // push front in the list of event a CPU event of duration quantum
+  // alter the duration of the old event subtracting quantum
+  if (e->duration>args->quantum) {
+    ProcessEvent* qe=(ProcessEvent*)malloc(sizeof(ProcessEvent));
+    qe->list.prev=qe->list.next=0;
+    qe->type=CPU;
+    qe->duration=args->quantum;
+    e->duration-=args->quantum;
+    List_pushFront(&pcb->events, (ListItem*)qe);
+  }
+};
+
 int main(int argc, char** argv) {
   FakeOS_init(&os);
-  SchedSJFArgs srr_args;
-  srr_args.quantum=10; //it sets the quantum 
-  os.schedule_args=&srr_args;
-  os.schedule_fn=schedSJF; //here it calls the scheduler involved 
+  
+  SchedSJFArgs ssjb_args;
+  ssjb_args.quantum=10;
+  os.schedule_args=&ssjb_args;
+  os.schedule_fn=schedSJF;
+
   
   assert( (atoi(argv[1])!=0 && *argv[1]!='0') && "You have to digit the number of cores");
   int num_core=atoi(argv[1]);
