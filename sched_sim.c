@@ -37,9 +37,8 @@ void schedSJF(FakeOS* os, void* args_){
   if (! os->ready.first)
     return;
 
-  int i=0;
   printList(&os->ready);
-  while (!List_empty(&os->ready) && i < os->num_core) {
+  while (!List_empty(&os->ready) && List_size(&os->running) < os->num_core) {
       
       
       FakePCB* pcb = getFakePCBWithLowestBurstPrediction(&os->ready);
@@ -66,7 +65,6 @@ void schedSJF(FakeOS* os, void* args_){
         e->duration-=args->quantum;
         List_pushFront(&pcb->events, (ListItem*)qe);
       }
-      i++;
     }
 };
 
