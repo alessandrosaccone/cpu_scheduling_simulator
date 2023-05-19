@@ -17,53 +17,33 @@ typedef struct { //only for order
 } SchedSJFArgs;
 
 void schedSJF(FakeOS* os, void* args_){
-  SchedSJFArgs* args=(SchedSJFArgs*)args_;
+  SchedRRArgs* args=(SchedRRArgs*)args_;
 
   // look for the first process in ready
   // if none, return
-  
   if (! os->ready.first)
     return;
-  
-  int i=0;
-  FakePCB* choose=0;
-  float min_burst_prediction = MAX; 
-  while (!List_empty(&os->ready) && i < os->num_core) {
-      ListItem* aux=os->ready.first;
-      while (aux) {
-        FakePCB* pcb = (FakePCB*)aux;
-        if (pcb->burst_prediction < min_burst_prediction) {
-          choose=pcb;
-          min_burst_prediction = pcb->burst_prediction;
-        }
-        aux=aux->next;
-      }
-      choose->arrival_time=os->timer;
-      
-      List_pushFront(&os->running, (ListItem*)choose);
-      FakePCB* fp = &os->running.first;
-      printf("%d", fp->pid);
-      
-      //os->running.first=(ListItem*)pcb;
-      
-      assert(choose->events.first);
-      ProcessEvent* e = (ProcessEvent*)choose->events.first;
-      assert(e->type==CPU);
 
-      // look at the first event
-      // if duration>quantum
-      // push front in the list of event a CPU event of duration quantum
-      // alter the duration of the old event subtracting quantum
-      if (e->duration>args->quantum) {
-        ProcessEvent* qe=(ProcessEvent*)malloc(sizeof(ProcessEvent));
-        qe->list.prev=qe->list.next=0;
-        qe->type=CPU;
-        qe->duration=args->quantum;
-        e->duration-=args->quantum;
-        List_pushFront(&choose->events, (ListItem*)qe);
-      }
-      i++;
-    }
+  FakePCB* pcb=(FakePCB*) List_popFront(&os->ready);
+  pcb->arrival_time=os->timer;
+  os->running.first=(ListItem*)pcb;
+  
+  assert(pcb->events.first);
+  ProcessEvent* e = (ProcessEvent*)pcb->events.first;
+  assert(e->type==CPU);
+
+  // look at the first event
+  // if duration>quantum
+  // push front in the list of event a CPU event of duration quantum
+  // alter the duration of the old event subtracting quantum
+  if (e->duration>args->quantum) {
+    ProcessEvent* qe=(ProcessEvent*)malloc(sizeof(ProcessEvent));
+    qe->list.prev=qe->list.next=0;
+    qe->type=CPU;
+    qe->duration=args->quantum;
+    e->duration-=args->quantum;
+    List_pushFront(&pcb->events, (ListItem*)qe);
+  }
 };
 
 void schedRR(FakeOS* os, void* args_){
