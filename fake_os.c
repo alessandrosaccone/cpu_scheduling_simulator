@@ -183,6 +183,8 @@ void FakeOS_simStep(FakeOS* os){
         switch (e->type){  
         case CPU:
           printf("\t\tmove to ready\n");
+          if (List_find(&os->running, (ListItem*) pcb))
+            pcb = (FakePCB*)List_detach(&os->running, (ListItem*) pcb);
           printf("\nPREDICTION %f, process: %d\n", pcb->burst_prediction, pcb->pid);
           pcb->last_burst=os->timer-pcb->arrival_time; //now I know how much the last burst was long
           burst_prediction(pcb);// so now I can calculate how the prediction
@@ -193,19 +195,20 @@ void FakeOS_simStep(FakeOS* os){
           break;
         case IO:
           printf("\t\tmove to waiting\n");
-          List_pushBack(&os->waiting, (ListItem*) pcb);
+          if (List_find(&os->running, (ListItem*) pcb))
+            pcb = (FakePCB*)List_detach(&os->running, (ListItem*) pcb);
           printf("\nPREDICTION %f, process: %d\n", pcb->burst_prediction, pcb->pid);
           pcb->last_burst=os->timer-pcb->arrival_time; //now I know how much the last burst was long
           burst_prediction(pcb);// so now I can calculate how the prediction
           pcb->last_prediction=pcb->burst_prediction; //here I the new value of prediction as the last prediction registered
           printf("\nLAST BURST %d, process: %d\n", pcb->last_burst, pcb->pid);
+          List_pushBack(&os->waiting, (ListItem*) pcb);
           os->is_schedule_needed=0;
           break;
         }
       }
         //printf("Debug"); fflush(stdout);
-        if (List_find(&os->running, (ListItem*) pcb))
-          pcb = (FakePCB*)List_detach(&os->running, (ListItem*) pcb);
+      
         //os->running.first = 0;
     }
   }
