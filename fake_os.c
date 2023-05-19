@@ -199,8 +199,8 @@ void FakeOS_simStep(FakeOS* os){
           List_pushBack(&os->waiting, (ListItem*) pcb);
           break;
         }
-        printf("\n\tLast burst of process %d: \t%d\n", pcb->pid, pcb->last_burst);
-        printf("\tPrediction of process %d: \t%f\n\n", pcb->pid, pcb->burst_prediction);
+        printf("\t\tLast burst of process %d: %d\n", pcb->pid, pcb->last_burst);
+        printf("\t\tPrediction of process %d: %f\n\n", pcb->pid, pcb->burst_prediction);
       }
     }
   }

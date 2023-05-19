@@ -122,27 +122,28 @@ int main(int argc, char** argv) {
 
   assert( (atoi(argv[2])!=0 && *argv[2]!='0') && "You have to digit the number of cores");
   int num_core=atoi(argv[2]);
-  printf("CORE NUMBER: \t%d\n\n", num_core);
+  printf("CORE NUMBER: \t%d\n", num_core);
   os.num_core=num_core;
 
   if (strcmp(argv[3], "RR")==0) {
     os.schedule_args=&srr_args;
     os.schedule_fn=schedRR; 
-    printf("===========Scheduling policy chosen: RR ==============\n");
+    printf("SCHEDULING POLICY CHOSEN: RR\n");
   }
   else {
     os.schedule_args=&srr_args;
     os.schedule_fn=schedSJF;  //default SJF
-    printf("===========Scheduling policy chosen: SJF ==============\n\n");
+    printf("SCHEDULING POLICY CHOSEN: SJF\n");
   }
 
   assert(atoi(argv[4])!=0 && *argv[4]!='0' && "You must insert an integer value of quantum");
   srr_args.quantum=atoi(argv[4]); 
+  printf("QUANTUM: \t%d\n\n", atoi(argv[4]));
   
   for (int i=5; i<argc; ++i){
     FakeProcess new_process;
     int num_events=FakeProcess_load(&new_process, argv[i]);
-    printf("loading [%s], pid: %d, events:%d",
+    printf("loading [%s], pid: %d, events:%d\n",
            argv[i], new_process.pid, num_events);
     if (num_events) {
       FakeProcess* new_process_ptr=(FakeProcess*)malloc(sizeof(FakeProcess));
